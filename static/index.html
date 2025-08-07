@@ -291,7 +291,7 @@
             canvas.style.height = video.clientHeight + "px";
 
             if (videoInterval) clearInterval(videoInterval);
-            videoInterval = setInterval(processVideoFrame, 200); // toutes les 200ms
+            videoInterval = setInterval(processVideoFrame, 1500); // toutes les 200ms
           };
         })
         .catch(err => {
@@ -319,7 +319,7 @@
         formData.append("file", blob, "frame.jpg");
 
         try {
-          const res = await fetch("https://masktracker.onrender.com//predict", {
+          const res = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
@@ -348,67 +348,71 @@
         }
       }, "image/jpeg");
     }
+function previewImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-    function previewImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+  const reader = new FileReader();
+  const img = document.getElementById("uploadedImage");
+  const video = document.getElementById("video");
+  const uploadedVideo = document.getElementById("uploadedVideo");
+  const canvas = document.getElementById("canvas");
 
-      const reader = new FileReader();
-      const img = document.getElementById("uploadedImage");
-      const video = document.getElementById("video");
-      const uploadedVideo = document.getElementById("uploadedVideo");
-      const canvas = document.getElementById("canvas");
+  video.style.display = "none";
+  uploadedVideo.style.display = "none";
 
-      video.style.display = "none";
-      uploadedVideo.style.display = "none";
+  reader.onload = () => {
+    img.src = reader.result;
+    img.style.display = "block";
 
-      reader.onload = () => {
-        img.src = reader.result;
-        img.style.display = "block";
+    img.onload = () => {
+      const realWidth = img.naturalWidth || img.width;
+      const realHeight = img.naturalHeight || img.height;
 
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          canvas.style.display = "block";
+      canvas.width = realWidth;
+      canvas.height = realHeight;
+      canvas.style.display = "block";
+      canvas.scrollIntoView({ behavior: "smooth" });
 
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, img.width, img.height);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, realWidth, realHeight);
 
-          const formData = new FormData();
-          formData.append("file", file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-          fetch("https://masktracker.onrender.com//predict", {
-            method: "POST",
-            body: formData,
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (!data.detections) return;
+      fetch("/predict", {
+        method: "POST",
+        body: formData,
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.detections) return;
 
-            data.detections.forEach(det => {
-              const [x1, y1, x2, y2] = det.bbox;
-              const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
-              const color = classColors[det.class] || "red";
+          data.detections.forEach(det => {
+            const [x1, y1, x2, y2] = det.bbox;
+            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
+            const color = classColors[det.class] || "red";
 
-              ctx.strokeStyle = color;
-              ctx.lineWidth = 3;
-              ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-              ctx.fillStyle = color;
-              ctx.font = "18px Arial";
-              ctx.fillText(label, x1 + 5, y1 + 22);
-            });
-          })
-          .catch(err => {
-            alert("Erreur pendant la prédiction.");
-            console.error(err);
+            ctx.fillStyle = color;
+            ctx.font = "18px Arial";
+            ctx.fillText(label, x1 + 5, y1 + 22);
           });
-        };
-      };
-      reader.readAsDataURL(file);
-      document.getElementById("cancelBtn").style.display = "inline-block";
+        })
+        .catch(err => {
+          alert("Erreur pendant la prédiction.");
+          console.error(err);
+        });
+    };
+  };
 
-    }
+  reader.readAsDataURL(file);
+  document.getElementById("cancelBtn").style.display = "inline-block";
+}
+
 function previewVideo(event) {
   const file = event.target.files[0];
   const video = document.getElementById("uploadedVideo");
@@ -442,7 +446,7 @@ function previewVideo(event) {
         formData.append("file", blob, "frame.jpg");
 
         try {
-          const res = await fetch("https://masktracker.onrender.com//predict", {
+          const res = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
