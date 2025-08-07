@@ -319,7 +319,7 @@
         formData.append("file", blob, "frame.jpg");
 
         try {
-          const res = await fetch("https://masktracker.onrender.com/predict", {
+          const res = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
@@ -377,7 +377,7 @@
           const formData = new FormData();
           formData.append("file", file);
 
-          fetch("https://masktracker.onrender.com/predict", {
+          fetch("/predict", {
             method: "POST",
             body: formData,
           })
