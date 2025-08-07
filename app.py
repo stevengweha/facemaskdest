@@ -21,6 +21,8 @@ from fastapi.staticfiles import StaticFiles
 # On sert tout ce qui est dans le dossier "static" à la racine "/"
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
+#c
+
 # Charger ton modèle YOLOv8 entraîné (assure-toi que best.pt est bien dans le dossier)
 model = YOLO("best.pt")
 
