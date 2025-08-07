@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Détection de Masque - Projet Éducatif</title>
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --success: #198754;
+      --text: #333;
+      --bg: #f5f7fa;
+      --light: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    header {
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 2rem 1rem;
+    }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-size: 1.4rem;
+    }
+
+    p, li {
+      font-size: 1rem;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    .btn, .upload-btn {
+      flex: 1 1 220px;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s ease;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn:hover {
+      background-color: #0b5ed7;
+    }
+
+    .upload-btn {
+      background-color: var(--success);
+      color: white;
+    }
+
+    .upload-btn:hover {
+      background-color: #146c43;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #preview video, #preview img, #preview canvas {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem 0;
+      color: #777;
+      font-size: 0.9rem;
+    }
+
+    /* Modal RGPD */
+    #info-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    #info-modal .modal-content {
+      background: var(--light);
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: pop 0.4s ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #info-modal button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.4rem;
+      }
+
+      .btn, .upload-btn {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+      }
+
+      h2 {
+        font-size: 1.2rem;
+      }
+
+      p, li {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Pop-up RGPD -->
+  <div id="info-modal">
+    <div class="modal-content">
+      <h2>🔐 Informations sur la vie privée</h2>
+      <p>
+        Cette application est un <strong>projet éducatif</strong> utilisant l’IA pour détecter les masques faciaux.
+      </p>
+      <p>
+        Aucune donnée n’est enregistrée ou partagée. Toutes les analyses se font localement.
+      </p>
+      <button onclick="closeModal()">J’ai compris</button>
+    </div>
+  </div>
+
+  <!-- En-tête -->
+  <header>
+    <h1>🛡️ Détection de Masque Facial avec IA</h1>
+  </header>
+
+  <main>
+    <!-- Objectif -->
+    <section>
+      <h2>🎯 Objectif du projet</h2>
+      <p>
+        Ce projet illustre comment une IA peut reconnaître en temps réel si une personne porte un masque facial,
+        en utilisant <strong>YOLOv8</strong>. Il est destiné à des fins d'apprentissage, de démonstration
+        et de sensibilisation à la vision par ordinateur.
+      </p>
+    </section>
+
+    <!-- Applications -->
+    <section>
+      <h2>📚 Applications possibles</h2>
+      <ul>
+        <li>Contrôle de conformité dans les lieux publics</li>
+        <li>Systèmes de surveillance sanitaire</li>
+        <li>Projets de recherche en vision par ordinateur</li>
+        <li>Apprentissage de l’IA pour les étudiants</li>
+      </ul>
+    </section>
+
+    <!-- Interface -->
+    <section>
+      <h2>📷 Test de détection</h2>
+      <div class="buttons">
+        <button class="btn" onclick="startWebcam()">🎥 Utiliser la caméra</button>
+
+        <label class="upload-btn">
+          📸 Importer une photo
+          <input type="file" accept="image/*" onchange="previewImage(event)">
+        </label>
+
+        <label class="upload-btn">
+          🎞️ Importer une vidéo
+          <input type="file" accept="video/*" onchange="previewVideo(event)">
+        </label>
+        <button id="cancelBtn" class="btn" onclick="cancelDetection()" style="display:none;">🛑 Annuler la détection</button>
+
+      </div>
+
+      <div id="preview">
+        <video id="video" autoplay playsinline style="display:none;"></video>
+        <img id="uploadedImage" style="display:none;" />
+        <video id="uploadedVideo" controls style="display:none;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    © 2025 • Projet éducatif de détection de masque • Auteur : MILO
+  </footer>
+
+  <script>
+    const classNames = ["Masque", "Sans Masque", "Incorrect"];
+    // Couleurs selon classe (vert, rouge, orange)
+    const classColors = ["green", "red", "orange"];
+
+    let stream = null;
+    let videoInterval = null;
+
+    function closeModal() {
+      document.getElementById("info-modal").style.display = "none";
+    }
+
+    function startWebcam() {
+      const video = document.getElementById("video");
+      const img = document.getElementById("uploadedImage");
+      const uploadedVideo = document.getElementById("uploadedVideo");
+      const canvas = document.getElementById("canvas");
+      const preview = document.getElementById("preview");
+
+      img.style.display = "none";
+      uploadedVideo.style.display = "none";
+      canvas.style.display = "block";
+      video.style.display = "block";
+
+      // Ajuster la taille du canvas au vidéo quand on a le flux
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+          stream = s;
+          video.srcObject = stream;
+
+          video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.style.width = video.clientWidth + "px";
+            canvas.style.height = video.clientHeight + "px";
+
+            if (videoInterval) clearInterval(videoInterval);
+            videoInterval = setInterval(processVideoFrame, 200); // toutes les 200ms
+          };
+        })
+        .catch(err => {
+          alert("Erreur d’accès caméra : " + err);
+        });
+        document.getElementById("cancelBtn").style.display = "inline-block";
+
+    }
+
+    async function processVideoFrame() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (video.readyState !== 4) return; // pas prêt
+
+      // Dessine la frame actuelle dans le canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Transforme le canvas en blob pour envoyer au serveur
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
+
+        try {
+          const res = await fetch("http://127.0.0.1:8000/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) throw new Error("Erreur serveur");
+
+          const data = await res.json();
+          if (!data.detections) return;
+
+          // Après avoir dessiné la frame, on dessine les boxes détectées
+          data.detections.forEach(det => {
+            const [x1, y1, x2, y2] = det.bbox;
+            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
+            const color = classColors[det.class] || "red";
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            ctx.fillStyle = color;
+            ctx.font = "18px Arial";
+            ctx.fillText(label, x1 + 5, y1 + 22);
+          });
+        } catch (err) {
+          console.error("Erreur détection vidéo:", err);
+        }
+      }, "image/jpeg");
+    }
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      const img = document.getElementById("uploadedImage");
+      const video = document.getElementById("video");
+      const uploadedVideo = document.getElementById("uploadedVideo");
+      const canvas = document.getElementById("canvas");
+
+      video.style.display = "none";
+      uploadedVideo.style.display = "none";
+
+      reader.onload = () => {
+        img.src = reader.result;
+        img.style.display = "block";
+
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.style.display = "block";
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+
+          const formData = new FormData();
+          formData.append("file", file);
+
+          fetch("http://127.0.0.1:8000/predict", {
+            method: "POST",
+            body: formData,
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.detections) return;
+
+            data.detections.forEach(det => {
+              const [x1, y1, x2, y2] = det.bbox;
+              const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
+              const color = classColors[det.class] || "red";
+
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 3;
+              ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+              ctx.fillStyle = color;
+              ctx.font = "18px Arial";
+              ctx.fillText(label, x1 + 5, y1 + 22);
+            });
+          })
+          .catch(err => {
+            alert("Erreur pendant la prédiction.");
+            console.error(err);
+          });
+        };
+      };
+      reader.readAsDataURL(file);
+      document.getElementById("cancelBtn").style.display = "inline-block";
+
+    }
+
+    function previewVideo(event) {
+      const file = event.target.files[0];
+      const video = document.getElementById("uploadedVideo");
+      const webcam = document.getElementById("video");
+      const img = document.getElementById("uploadedImage");
+      const canvas = document.getElementById("canvas");
+
+      webcam.style.display = "none";
+      img.style.display = "none";
+      canvas.style.display = "none";
+
+      video.src = URL.createObjectURL(file);
+      video.style.display = "block";
+      document.getElementById("cancelBtn").style.display = "inline-block";
+
+    }
+    function cancelDetection() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const img = document.getElementById("uploadedImage");
+  const uploadedVideo = document.getElementById("uploadedVideo");
+  const ctx = canvas.getContext("2d");
+
+  // Stop webcam stream
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  // Stop detection interval
+  if (videoInterval) {
+    clearInterval(videoInterval);
+    videoInterval = null;
+  }
+
+  // Reset preview
+  video.style.display = "none";
+  img.style.display = "none";
+  uploadedVideo.pause();
+  uploadedVideo.removeAttribute("src");
+  uploadedVideo.load();
+  uploadedVideo.style.display = "none";
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.display = "none";
+
+  // Hide cancel button
+  document.getElementById("cancelBtn").style.display = "none";
+}
+
+
+  </script>
+  </body>
+</html>
