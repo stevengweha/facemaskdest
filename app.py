@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 import os
 from ultralytics import YOLO
 import numpy as np
@@ -10,16 +12,13 @@ app = FastAPI()
 
 # Autoriser les requêtes de n'importe quelle origine (utile pour React frontend)
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Remplace par ["http://localhost:3000"] si tu veux restreindre à ton frontend React
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    CORSMiddleware
 )
 
 from fastapi.staticfiles import StaticFiles
 # On sert tout ce qui est dans le dossier "static" à la racine "/"
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
 
 #c
 

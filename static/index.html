@@ -319,7 +319,7 @@
         formData.append("file", blob, "frame.jpg");
 
         try {
-          const res = await fetch("/http://127.0.0.1:8000/predict", {
+          const res = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
@@ -380,7 +380,7 @@ function previewImage(event) {
       const formData = new FormData();
       formData.append("file", file);
 
-      fetch("http://127.0.0.1:8000/predict", {
+      fetch("/predict", {
         method: "POST",
         body: formData,
       })
@@ -446,7 +446,7 @@ function previewVideo(event) {
         formData.append("file", blob, "frame.jpg");
 
         try {
-          const res = await fetch("http://127.0.0.1:8000/predict", {
+          const res = await fetch("/predict", {
             method: "POST",
             body: formData,
           });
