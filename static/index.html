@@ -409,23 +409,73 @@
       document.getElementById("cancelBtn").style.display = "inline-block";
 
     }
+function previewVideo(event) {
+  const file = event.target.files[0];
+  const video = document.getElementById("uploadedVideo");
+  const webcam = document.getElementById("video");
+  const img = document.getElementById("uploadedImage");
+  const canvas = document.getElementById("canvas");
 
-    function previewVideo(event) {
-      const file = event.target.files[0];
-      const video = document.getElementById("uploadedVideo");
-      const webcam = document.getElementById("video");
-      const img = document.getElementById("uploadedImage");
-      const canvas = document.getElementById("canvas");
+  webcam.style.display = "none";
+  img.style.display = "none";
 
-      webcam.style.display = "none";
-      img.style.display = "none";
-      canvas.style.display = "none";
+  video.src = URL.createObjectURL(file);
+  video.style.display = "block";
+  canvas.style.display = "block";
+  document.getElementById("cancelBtn").style.display = "inline-block";
 
-      video.src = URL.createObjectURL(file);
-      video.style.display = "block";
-      document.getElementById("cancelBtn").style.display = "inline-block";
+  video.onloadeddata = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-    }
+    if (uploadedVideoInterval) clearInterval(uploadedVideoInterval);
+
+    uploadedVideoInterval = setInterval(() => {
+      if (video.paused || video.ended) return;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
+
+        try {
+          const res = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await res.json();
+
+          if (!data.detections) return;
+
+          // Dessiner les boxes
+          data.detections.forEach(det => {
+            const [x1, y1, x2, y2] = det.bbox;
+            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
+            const color = classColors[det.class] || "red";
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            ctx.fillStyle = color;
+            ctx.font = "18px Arial";
+            ctx.fillText(label, x1 + 5, y1 + 22);
+          });
+        } catch (err) {
+          console.error("Erreur détection vidéo:", err);
+        }
+      }, "image/jpeg");
+    }, 400); // Toutes les 300ms
+  };
+        document.getElementById("cancelBtn").style.display = "inline-block";
+  uploadedVideoInterval = null;
+}
+
+
     function cancelDetection() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");

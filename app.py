@@ -24,7 +24,7 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 # Charger ton modèle YOLOv8 entraîné (assure-toi que best.pt est bien dans le dossier)
 model = YOLO("best.pt")
 
-@app.api_route("/", methods=["GET", "HEAD"])
+@app.get("/")
 def root():
     return FileResponse(os.path.join("static", "index.html"))
 
