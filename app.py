@@ -42,9 +42,6 @@ async def predict(file: UploadFile = File(...)):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-# ✅ Optimisation : redimensionner l’image pour accélérer YOLO
-    img = cv2.resize(img, (640, 640))
-
     # Inférence avec YOLO
     results = model(img)
 
