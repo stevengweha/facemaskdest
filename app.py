@@ -7,6 +7,7 @@ import os
 from ultralytics import YOLO
 import numpy as np
 import cv2
+import time
 
 app = FastAPI()
 
@@ -35,10 +36,14 @@ async def read_root(request: Request):
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+start = time.time()
     # Lire l'image envoyée par le frontend
     image_bytes = await file.read()
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+# ✅ Optimisation : redimensionner l’image pour accélérer YOLO
+    img = cv2.resize(img, (640, 640))
 
     # Inférence avec YOLO
     results = model(img)
@@ -56,4 +61,7 @@ async def predict(file: UploadFile = File(...)):
                 "bbox": [round(coord, 2) for coord in xyxy]
             })
 
-    return {"detections": detections}
+    duration = time.time() - start
+    print(f"Inference time: {duration:.2f}s")
+
+    return {"detections": detections, "time": round(duration, 2)}
