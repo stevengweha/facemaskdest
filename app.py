@@ -19,6 +19,9 @@ from fastapi.staticfiles import StaticFiles
 # On sert tout ce qui est dans le dossier "static" à la racine "/"
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
+# Configurer les templates Jinja2 pour le rendu HTML
+templates = Jinja2Templates(directory="static")
+
 
 #c
 
@@ -26,8 +29,8 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 model = YOLO("best.pt")
 
 @app.get("/")
-def root():
-    return FileResponse(os.path.join("static", "index.html"))
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/predict")
