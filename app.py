@@ -36,7 +36,7 @@ async def read_root(request: Request):
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-start = time.time()
+    start = time.time()
     # Lire l'image envoyée par le frontend
     image_bytes = await file.read()
     nparr = np.frombuffer(image_bytes, np.uint8)
