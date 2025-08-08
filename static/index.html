@@ -291,7 +291,7 @@
             canvas.style.height = video.clientHeight + "px";
 
             if (videoInterval) clearInterval(videoInterval);
-            videoInterval = setInterval(processVideoFrame, 1500); // toutes les 200ms
+            videoInterval = setInterval(processVideoFrame, 2500); // toutes les 200ms
           };
         })
         .catch(err => {
