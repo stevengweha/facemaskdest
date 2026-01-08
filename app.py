@@ -11,7 +11,7 @@ import time
 
 app = FastAPI()
 
-# Autoriser les requêtes de n'importe quelle origine (utile pour React frontend)
+# Autoriser les requêtes de n'importe quelle origine
 app.add_middleware(
     CORSMiddleware
 )
@@ -24,9 +24,7 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 templates = Jinja2Templates(directory="static")
 
 
-#c
-
-# Charger ton modèle YOLOv8 entraîné (assure-toi que best.pt est bien dans le dossier)
+# Charger ton modèle YOLOv8 entraîné
 model = YOLO("best.pt")
 
 @app.get("/")
