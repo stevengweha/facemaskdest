@@ -24,14 +24,14 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 templates = Jinja2Templates(directory="static")
 
 
-# Charger ton modèle YOLOv8 entraîné
+# Charger le modèle entraîné
 model = YOLO("best.pt")
 
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
+# route de predictiom
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     start = time.time()
