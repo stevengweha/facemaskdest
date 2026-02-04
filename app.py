@@ -9,21 +9,14 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import time
-<<<<<<< HEAD
 import ffmpeg 
 import tempfile
 from typing import Generator
-=======
->>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
 
 # Configuration de l'application
 app = FastAPI()
 
-<<<<<<< HEAD
 # Configuration du CORS
-=======
-# Autoriser les requêtes de n'importe quelle origine
->>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -38,36 +31,23 @@ templates = Jinja2Templates(directory="static")
 # Chargement du modèle YOLO
 model = YOLO("best.onnx", task="detect")
 
-<<<<<<< HEAD
 # --- Fonction utilitaire pour le nettoyage ---
 def remove_file(path: str):
     """Supprime un fichier après son envoi."""
     if os.path.exists(path):
         os.unlink(path)
-=======
-# Charger le modèle entraîné
-model = YOLO("best.pt")
->>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
 
 # --- ROUTE PRINCIPALE ---
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-<<<<<<< HEAD
 # --- ROUTE IMAGE UPLOAD ET TRAITEMENT (/predict) ---
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     start = time.time()
     
     # Lecture des bytes de l'image
-=======
-# route de predictiom
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    start = time.time()
-    # Lire l'image envoyée par le frontend
->>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
     image_bytes = await file.read()
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -86,7 +66,6 @@ async def predict(file: UploadFile = File(...)):
                 "bbox": [round(coord, 2) for coord in xyxy]
             })
 
-<<<<<<< HEAD
     end = time.time()
     print(f"Temps d'inférence image: {end - start:.2f} secondes")
     return {"detections": detections}
@@ -260,9 +239,3 @@ def gen_frames() -> Generator[bytes, None, None]:
 @app.get("/live")
 def live_feed():
     return StreamingResponse(gen_frames(), media_type="multipart/x-mixed-replace; boundary=frame")
-=======
-    duration = time.time() - start
-    print(f"Inference time: {duration:.2f}s")
-
-    return {"detections": detections, "time": round(duration, 2)}
->>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
