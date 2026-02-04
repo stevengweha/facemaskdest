@@ -1,521 +1,286 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Détection de Masque - Projet Éducatif</title>
-  <style>
-    :root {
-      --primary: #0d6efd;
-      --success: #198754;
-      --text: #333;
-      --bg: #f5f7fa;
-      --light: #ffffff;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Safety Monitor | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --glass: rgba(255, 255, 255, 0.8);
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      animation: fadeIn 1s ease-in;
-    }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: #1e293b;
+            min-height: 100vh;
+        }
 
-    header {
-      background-color: var(--primary);
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
+        /* --- NAVIGATION --- */
+        nav {
+            padding: 1.5rem 2rem;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            position: sticky; top: 0; z-index: 100;
+        }
 
-    header h1 {
-      font-size: 1.8rem;
-    }
+        nav h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-    main {
-      max-width: 1200px;
-      margin: auto;
-      padding: 2rem 1rem;
-    }
+        /* --- DASHBOARD LAYOUT --- */
+        main {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
 
-    section {
-      margin-bottom: 3rem;
-    }
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; }
+        }
 
-    h2 {
-      color: var(--primary);
-      margin-bottom: 1rem;
-      font-size: 1.4rem;
-    }
+        /* --- LEFT PANEL: CONTROLS & STATS --- */
+        .panel-left { display: flex; flex-direction: column; gap: 1.5rem; }
 
-    p, li {
-      font-size: 1rem;
-    }
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+        }
 
-    ul {
-      padding-left: 1.2rem;
-    }
+        .stat-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .stat-item:last-child { border: none; }
+        .stat-label { font-size: 0.9rem; font-weight: 600; color: #64748b; }
+        .stat-value { font-size: 1.4rem; font-weight: 800; }
 
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-      margin-top: 1rem;
-    }
+        /* --- BUTTONS --- */
+        .btn-group { display: flex; flex-direction: column; gap: 0.8rem; }
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .btn-outline { background: white; border: 1px solid #e2e8f0; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
 
-    .btn, .upload-btn {
-      flex: 1 1 220px;
-      text-align: center;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-      transition: background 0.3s ease;
-    }
+        /* --- VIEWPORT: CENTER PIECE --- */
+        .viewport-container {
+            position: relative;
+            background: #0f172a;
+            border-radius: 24px;
+            height: 75vh;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
 
-    .btn {
-      background-color: var(--primary);
-      color: white;
-    }
+        #canvas, #liveFeed, #outputVideo {
+            width: 100%; height: 100%; object-fit: contain; display: none;
+        }
 
-    .btn:hover {
-      background-color: #0b5ed7;
-    }
+        /* --- OVERLAYS --- */
+        .loader-overlay {
+            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.8);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 50;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 1rem;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    .upload-btn {
-      background-color: var(--success);
-      color: white;
-    }
+        /* --- MODAL --- */
+        #rgpd-modal {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+        }
+        .modal-box {
+            background: white; padding: 2.5rem; border-radius: 30px;
+            max-width: 450px; text-align: center;
+        }
 
-    .upload-btn:hover {
-      background-color: #146c43;
-    }
-
-    input[type="file"] {
-      display: none;
-    }
-
-    #preview video, #preview img, #preview canvas {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-top: 1rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    footer {
-      text-align: center;
-      padding: 1rem 0;
-      color: #777;
-      font-size: 0.9rem;
-    }
-
-    /* Modal RGPD */
-    #info-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    #info-modal .modal-content {
-      background: var(--light);
-      padding: 2rem;
-      border-radius: 10px;
-      max-width: 400px;
-      width: 90%;
-      text-align: center;
-      animation: pop 0.4s ease-out;
-    }
-
-    @keyframes pop {
-      0% { transform: scale(0.7); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    #info-modal button {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    @media (max-width: 600px) {
-      header h1 {
-        font-size: 1.4rem;
-      }
-
-      .btn, .upload-btn {
-        font-size: 0.9rem;
-        padding: 0.6rem;
-      }
-
-      h2 {
-        font-size: 1.2rem;
-      }
-
-      p, li {
-        font-size: 0.95rem;
-      }
-    }
-  </style>
+        input[type="file"] { display: none; }
+    </style>
 </head>
 <body>
 
-  <!-- Pop-up RGPD -->
-  <div id="info-modal">
-    <div class="modal-content">
-      <h2>🔐 Informations sur la vie privée</h2>
-      <p>
-        Cette application est un <strong>projet éducatif</strong> utilisant l’IA pour détecter les masques faciaux.
-      </p>
-      <p>
-        Aucune donnée n’est enregistrée ou partagée. Toutes les analyses se font localement.
-      </p>
-      <button onclick="closeModal()">J’ai compris</button>
+    <div id="rgpd-modal">
+        <div class="modal-box">
+            <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">🛡️ Privacy First</h2>
+            <p style="color: #64748b; margin-bottom: 2rem;">Notre IA analyse les images localement pour votre session. Aucune donnée n'est stockée sur nos serveurs.</p>
+            <button class="btn btn-primary" onclick="closeModal()">Accepter & Lancer</button>
+        </div>
     </div>
-  </div>
 
-  <!-- En-tête -->
-  <header>
-    <h1>🛡️ Détection de Masque Facial avec IA</h1>
-  </header>
+    <nav>
+        <h1>AI.MONITOR <span style="color: var(--primary);">MASK</span></h1>
+        <div><span class="status-dot"></span> <small>Système Actif</small></div>
+    </nav>
 
-  <main>
-    <!-- Objectif -->
-    <section>
-      <h2>🎯 Objectif du projet</h2>
-      <p>
-        Ce projet illustre comment une IA peut reconnaître en temps réel si une personne porte un masque facial,
-        en utilisant <strong>YOLOv8</strong>. Il est destiné à des fins d'apprentissage, de démonstration
-        et de sensibilisation à la vision par ordinateur.
-      </p>
-    </section>
+    <main>
+        <div class="panel-left">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Contrôles</h3>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="startWebcam()">🎥 Webcam Live</button>
+                    <label class="btn btn-outline">
+                        📁 Importer Image <input type="file" accept="image/*" onchange="processImage(event)">
+                    </label>
+                    <button id="cancelBtn" class="btn btn-outline" style="color: var(--danger); display:none;" onclick="stopAll()">Arrêter le flux</button>
+                </div>
+            </div>
 
-    <!-- Applications -->
-    <section>
-      <h2>📚 Applications possibles</h2>
-      <ul>
-        <li>Contrôle de conformité dans les lieux publics</li>
-        <li>Systèmes de surveillance sanitaire</li>
-        <li>Projets de recherche en vision par ordinateur</li>
-        <li>Apprentissage de l’IA pour les étudiants</li>
-      </ul>
-    </section>
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Statistiques Temps Réel</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Conforme</span>
+                    <span class="stat-value" id="count-mask" style="color: var(--success);">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Sans Masque</span>
+                    <span class="stat-value" id="count-no-mask" style="color: var(--danger);">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Incorrect</span>
+                    <span class="stat-value" id="count-incorrect" style="color: var(--warning);">0</span>
+                </div>
+            </div>
+        </div>
 
-    <!-- Interface -->
-    <section>
-      <h2>📷 Test de détection</h2>
-      <div class="buttons">
-        <button class="btn" onclick="startWebcam()">🎥 Utiliser la caméra</button>
+        <div class="viewport-container">
+            <div id="loader" class="loader-overlay">
+                <div class="spinner"></div>
+                <p style="font-size: 0.9rem; letter-spacing: 1px;">TRAITEMENT NEURONAL...</p>
+            </div>
+            <img id="liveFeed" />
+            <canvas id="canvas"></canvas>
+            <video id="outputVideo" controls></video>
+        </div>
+    </main>
 
-        <label class="upload-btn">
-          📸 Importer une photo
-          <input type="file" accept="image/*" onchange="previewImage(event)">
-        </label>
+    <script>
+        const API_URL = window.location.origin;
+        const classNames = ["Masque", "Sans Masque", "Incorrect"];
+        const classColors = ["#10b981", "#ef4444", "#f59e0b"];
 
-        <label class="upload-btn">
-          🎞️ Importer une vidéo
-          <input type="file" accept="video/*" onchange="previewVideo(event)">
-        </label>
-        <button id="cancelBtn" class="btn" onclick="cancelDetection()" style="display:none;">🛑 Annuler la détection</button>
+        function closeModal() { document.getElementById("rgpd-modal").style.display = "none"; }
 
-      </div>
-
-      <div id="preview">
-        <video id="video" autoplay playsinline style="display:none;"></video>
-        <img id="uploadedImage" style="display:none;" />
-        <video id="uploadedVideo" controls style="display:none;"></video>
-        <canvas id="canvas" style="display:none;"></canvas>
-      </div>
-
-    </section>
-  </main>
-
-  <footer>
-    © 2025 • Projet éducatif de détection de masque • Auteur : MILO
-  </footer>
-
-  <script>
-    const classNames = ["Masque", "Sans Masque", "Incorrect"];
-    // Couleurs selon classe (vert, rouge, orange)
-    const classColors = ["green", "red", "orange"];
-
-    let stream = null;
-    let videoInterval = null;
-
-    function closeModal() {
-      document.getElementById("info-modal").style.display = "none";
-    }
-
-    function startWebcam() {
-      const video = document.getElementById("video");
-      const img = document.getElementById("uploadedImage");
-      const uploadedVideo = document.getElementById("uploadedVideo");
-      const canvas = document.getElementById("canvas");
-      const preview = document.getElementById("preview");
-
-      img.style.display = "none";
-      uploadedVideo.style.display = "none";
-      canvas.style.display = "block";
-      video.style.display = "block";
-
-      // Ajuster la taille du canvas au vidéo quand on a le flux
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(s => {
-          stream = s;
-          video.srcObject = stream;
-
-          video.onloadedmetadata = () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.style.width = video.clientWidth + "px";
-            canvas.style.height = video.clientHeight + "px";
-
-            if (videoInterval) clearInterval(videoInterval);
-            videoInterval = setInterval(processVideoFrame, 1500); // toutes les 200ms
-          };
-        })
-        .catch(err => {
-          alert("Erreur d’accès caméra : " + err);
-        });
-        document.getElementById("cancelBtn").style.display = "inline-block";
-
-    }
-
-    async function processVideoFrame() {
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
-
-      if (video.readyState !== 4) return; // pas prêt
-
-      // Dessine la frame actuelle dans le canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Transforme le canvas en blob pour envoyer au serveur
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-
-        const formData = new FormData();
-        formData.append("file", blob, "frame.jpg");
-
-        try {
-          const res = await fetch("/predict", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!res.ok) throw new Error("Erreur serveur");
-
-          const data = await res.json();
-          if (!data.detections) return;
-
-          // Après avoir dessiné la frame, on dessine les boxes détectées
-          data.detections.forEach(det => {
-            const [x1, y1, x2, y2] = det.bbox;
-            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
-            const color = classColors[det.class] || "red";
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-            ctx.fillStyle = color;
-            ctx.font = "18px Arial";
-            ctx.fillText(label, x1 + 5, y1 + 22);
-          });
-        } catch (err) {
-          console.error("Erreur détection vidéo:", err);
+        function setStats(m, nm, inc) {
+            document.getElementById('count-mask').textContent = m;
+            document.getElementById('count-no-mask').textContent = nm;
+            document.getElementById('count-incorrect').textContent = inc;
         }
-      }, "image/jpeg");
-    }
-function previewImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
 
-  const reader = new FileReader();
-  const img = document.getElementById("uploadedImage");
-  const video = document.getElementById("video");
-  const uploadedVideo = document.getElementById("uploadedVideo");
-  const canvas = document.getElementById("canvas");
-
-  video.style.display = "none";
-  uploadedVideo.style.display = "none";
-
-  reader.onload = () => {
-    img.src = reader.result;
-    img.style.display = "block";
-
-    img.onload = () => {
-      const realWidth = img.naturalWidth || img.width;
-      const realHeight = img.naturalHeight || img.height;
-
-      canvas.width = realWidth;
-      canvas.height = realHeight;
-      canvas.style.display = "block";
-      canvas.scrollIntoView({ behavior: "smooth" });
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, realWidth, realHeight);
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      fetch("/predict", {
-        method: "POST",
-        body: formData,
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (!data.detections) return;
-
-          data.detections.forEach(det => {
-            const [x1, y1, x2, y2] = det.bbox;
-            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
-            const color = classColors[det.class] || "red";
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-            ctx.fillStyle = color;
-            ctx.font = "18px Arial";
-            ctx.fillText(label, x1 + 5, y1 + 22);
-          });
-        })
-        .catch(err => {
-          alert("Erreur pendant la prédiction.");
-          console.error(err);
-        });
-    };
-  };
-
-  reader.readAsDataURL(file);
-  document.getElementById("cancelBtn").style.display = "inline-block";
-}
-
-function previewVideo(event) {
-  const file = event.target.files[0];
-  const video = document.getElementById("uploadedVideo");
-  const webcam = document.getElementById("video");
-  const img = document.getElementById("uploadedImage");
-  const canvas = document.getElementById("canvas");
-
-  webcam.style.display = "none";
-  img.style.display = "none";
-
-  video.src = URL.createObjectURL(file);
-  video.style.display = "block";
-  canvas.style.display = "block";
-  document.getElementById("cancelBtn").style.display = "inline-block";
-
-  video.onloadeddata = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    if (uploadedVideoInterval) clearInterval(uploadedVideoInterval);
-
-    uploadedVideoInterval = setInterval(() => {
-      if (video.paused || video.ended) return;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const formData = new FormData();
-        formData.append("file", blob, "frame.jpg");
-
-        try {
-          const res = await fetch("/predict", {
-            method: "POST",
-            body: formData,
-          });
-
-          const data = await res.json();
-
-          if (!data.detections) return;
-
-          // Dessiner les boxes
-          data.detections.forEach(det => {
-            const [x1, y1, x2, y2] = det.bbox;
-            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
-            const color = classColors[det.class] || "red";
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-            ctx.fillStyle = color;
-            ctx.font = "18px Arial";
-            ctx.fillText(label, x1 + 5, y1 + 22);
-          });
-        } catch (err) {
-          console.error("Erreur détection vidéo:", err);
+        function resetView() {
+            document.querySelectorAll('.viewport-container > *:not(#loader)').forEach(el => el.style.display = 'none');
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('liveFeed').src = "";
+            setStats(0,0,0);
         }
-      }, "image/jpeg");
-    }, 400); // Toutes les 300ms
-  };
-        document.getElementById("cancelBtn").style.display = "inline-block";
-  uploadedVideoInterval = null;
-}
 
+        function startWebcam() {
+            resetView();
+            const feed = document.getElementById("liveFeed");
+            feed.src = `${API_URL}/live`;
+            feed.style.display = "block";
+            document.getElementById("cancelBtn").style.display = "flex";
+        }
 
-    function cancelDetection() {
-  const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
-  const img = document.getElementById("uploadedImage");
-  const uploadedVideo = document.getElementById("uploadedVideo");
-  const ctx = canvas.getContext("2d");
+        async function processImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-  // Stop webcam stream
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    stream = null;
-  }
+            resetView();
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            const loader = document.getElementById("loader");
+            const img = new Image();
 
-  // Stop detection interval
-  if (videoInterval) {
-    clearInterval(videoInterval);
-    videoInterval = null;
-  }
+            loader.style.display = "flex";
 
-  // Reset preview
-  video.style.display = "none";
-  img.style.display = "none";
-  uploadedVideo.pause();
-  uploadedVideo.removeAttribute("src");
-  uploadedVideo.load();
-  uploadedVideo.style.display = "none";
+            img.onload = async () => {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                ctx.drawImage(img, 0, 0);
+                canvas.style.display = "block";
 
-  // Clear canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  canvas.style.display = "none";
+                const formData = new FormData();
+                formData.append("file", file);
 
-  // Hide cancel button
-  document.getElementById("cancelBtn").style.display = "none";
-}
+                try {
+                    const res = await fetch(`${API_URL}/predict`, { method: "POST", body: formData });
+                    const data = await res.json();
 
+                    ctx.drawImage(img, 0, 0);
+                    let counts = [0, 0, 0];
 
-  </script>
-  </body>
+                    if (data.detections) {
+                        data.detections.forEach(det => {
+                            counts[det.class]++;
+                            const [x1, y1, x2, y2] = det.bbox;
+                            const color = classColors[det.class];
+                            
+                            // Design raffiné des boites
+                            const radius = 4;
+                            ctx.strokeStyle = color;
+                            ctx.lineWidth = Math.max(canvas.width / 300, 3);
+                            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                            // Étiquette propre
+                            ctx.fillStyle = color;
+                            const fontSize = Math.max(canvas.width / 50, 14);
+                            ctx.font = `600 ${fontSize}px 'Plus Jakarta Sans'`;
+                            const txt = `${classNames[det.class]} ${(det.confidence*100).toFixed(0)}%`;
+                            const padding = 8;
+                            ctx.fillRect(x1, y1 - fontSize - padding, ctx.measureText(txt).width + padding*2, fontSize + padding);
+
+                            ctx.fillStyle = "white";
+                            ctx.fillText(txt, x1 + padding, y1 - padding - 2);
+                        });
+                    }
+                    setStats(counts[0], counts[1], counts[2]);
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    loader.style.display = "none";
+                }
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        function stopAll() { resetView(); }
+    </script>
+</body>
 </html>

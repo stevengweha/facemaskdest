@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 opencv-python-headless
-pillow
+Pillow
 numpy
 ultralytics
+jinja2
