@@ -196,10 +196,120 @@
 
         function closeModal() { document.getElementById("rgpd-modal").style.display = "none"; }
 
+<<<<<<< HEAD
         function setStats(m, nm, inc) {
             document.getElementById('count-mask').textContent = m;
             document.getElementById('count-no-mask').textContent = nm;
             document.getElementById('count-incorrect').textContent = inc;
+=======
+      </div>
+
+      <div id="preview">
+        <video id="video" autoplay playsinline style="display:none;"></video>
+        <img id="uploadedImage" style="display:none;" />
+        <video id="uploadedVideo" controls style="display:none;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    © 2025 • Projet éducatif de détection de masque • Auteur : MILO
+  </footer>
+
+  <script>
+    const classNames = ["Masque", "Sans Masque", "Incorrect"];
+    // Couleurs selon classe (vert, rouge, orange)
+    const classColors = ["green", "red", "orange"];
+
+    let stream = null;
+    let videoInterval = null;
+
+    function closeModal() {
+      document.getElementById("info-modal").style.display = "none";
+    }
+
+    function startWebcam() {
+      const video = document.getElementById("video");
+      const img = document.getElementById("uploadedImage");
+      const uploadedVideo = document.getElementById("uploadedVideo");
+      const canvas = document.getElementById("canvas");
+      const preview = document.getElementById("preview");
+
+      img.style.display = "none";
+      uploadedVideo.style.display = "none";
+      canvas.style.display = "block";
+      video.style.display = "block";
+
+      // Ajuster la taille du canvas au vidéo quand on a le flux
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+          stream = s;
+          video.srcObject = stream;
+
+          video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.style.width = video.clientWidth + "px";
+            canvas.style.height = video.clientHeight + "px";
+
+            if (videoInterval) clearInterval(videoInterval);
+            videoInterval = setInterval(processVideoFrame, 2500); // toutes les 200ms
+          };
+        })
+        .catch(err => {
+          alert("Erreur d’accès caméra : " + err);
+        });
+        document.getElementById("cancelBtn").style.display = "inline-block";
+
+    }
+
+    async function processVideoFrame() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (video.readyState !== 4) return; // pas prêt
+
+      // Dessine la frame actuelle dans le canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Transforme le canvas en blob pour envoyer au serveur
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
+
+        try {
+          const res = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) throw new Error("Erreur serveur");
+
+          const data = await res.json();
+          if (!data.detections) return;
+
+          // Après avoir dessiné la frame, on dessine les boxes détectées
+          data.detections.forEach(det => {
+            const [x1, y1, x2, y2] = det.bbox;
+            const label = `${classNames[det.class]} (${(det.confidence * 100).toFixed(1)}%)`;
+            const color = classColors[det.class] || "red";
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            ctx.fillStyle = color;
+            ctx.font = "18px Arial";
+            ctx.fillText(label, x1 + 5, y1 + 22);
+          });
+        } catch (err) {
+          console.error("Erreur détection vidéo:", err);
+>>>>>>> c4eb4b78be9ba93cce994dc6c672b9cebd10082a
         }
 
         function resetView() {
