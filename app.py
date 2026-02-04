@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
@@ -13,9 +13,8 @@ import time
 import ffmpeg 
 import tempfile
 import logging
-from typing import Generator
 
-# Configuration des logs pour voir ce qui se passe sur Render
+# Configuration des logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -28,31 +27,37 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Montage des dossiers et templates
+# Montage des dossiers
 if not os.path.exists("static"):
     os.makedirs("static")
-
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 templates = Jinja2Templates(directory="static")
 
-# Chargement du modèle
-# Note : ONNX est plus rapide sur CPU, mais nécessite la taille d'export (souvent 640)
+# --- CONFIGURATION SYNCHRONISÉE AVEC TON MODÈLE ---
+# Ordre exact détecté : {0: 'with_mask', 1: 'without_mask', 2: 'mask_weared_incorrect'}
+CLASS_NAMES = {
+    0: "Masque",                 # with_mask
+    1: "Sans Masque",            # without_mask
+    2: "Incorrect"               # mask_weared_incorrect
+}
+
+# Couleurs pour le rendu vidéo (Format BGR pour OpenCV)
+CLASS_COLORS = {
+    0: (0, 255, 0),    # Vert pour Masque
+    1: (0, 0, 255),    # Rouge pour Sans Masque
+    2: (0, 255, 255)   # Jaune pour Incorrect
+}
+
 try:
     model = YOLO("best.onnx", task="detect")
     logger.info("Modèle ONNX chargé avec succès")
 except Exception as e:
-    logger.error(f"Erreur chargement modèle : {e}")
-    # Fallback au cas où le .onnx est manquant
+    logger.error(f"Erreur chargement modèle ONNX : {e}. Tentative avec .pt")
     model = YOLO("best.pt") 
 
 def remove_file(path: str):
-    """Nettoyage sécurisé des fichiers temporaires."""
-    try:
-        if os.path.exists(path):
-            os.unlink(path)
-            logger.info(f"Fichier supprimé : {path}")
-    except Exception as e:
-        logger.error(f"Erreur suppression fichier {path} : {e}")
+    if os.path.exists(path):
+        os.unlink(path)
 
 @app.get("/")
 async def read_root(request: Request):
@@ -70,20 +75,23 @@ async def predict(file: UploadFile = File(...)):
         if img is None:
             raise HTTPException(status_code=400, detail="Image invalide")
 
-        # Utilisation de imgsz=640 car ton ONNX l'exige (voir ton erreur précédente)
         with torch.no_grad():
             results = model(img, imgsz=640, conf=0.25, verbose=False)
         
         detections = []
         for result in results:
             for box in result.boxes:
+                cls_id = int(box.cls[0])
+                label = CLASS_NAMES.get(cls_id, "Inconnu")
+
                 detections.append({
-                    "class": int(box.cls[0]),
+                    "class": cls_id,
+                    "label": label,
                     "confidence": round(float(box.conf[0]), 3),
                     "bbox": [round(c, 2) for c in box.xyxy[0].tolist()]
                 })
         
-        logger.info(f"Inférence image réussie en {time.time() - start_time:.3f}s")
+        logger.info(f"Inférence image réussie : {len(detections)} objets détectés en {time.time() - start_time:.3f}s")
         return {"detections": detections}
     except Exception as e:
         logger.error(f"Erreur Predict : {e}")
@@ -100,15 +108,12 @@ async def predict_video_ffmpeg(file: UploadFile = File(...)):
             temp_in = tmp.name
              
         cap = cv2.VideoCapture(temp_in)
-        if not cap.isOpened():
-            raise ValueError("Impossible de lire la vidéo")
-
         fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         output_path = temp_in.replace(suffix, "_out.mp4")
 
-        # Preset 'ultrafast' pour économiser le CPU de Render
+        # Configuration FFmpeg pour une sortie compatible navigateur (H.264)
         process = (
             ffmpeg
             .input('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{width}x{height}', r=fps)
@@ -122,15 +127,27 @@ async def predict_video_ffmpeg(file: UploadFile = File(...)):
             ret, frame = cap.read()
             if not ret: break
             
-            # On traite 1 frame sur 3 pour la robustesse sur Render (CPU 0.1)
-            if frame_count % 3 == 0:
-                with torch.no_grad():
-                    results = model(frame, imgsz=640, verbose=False)
-                for result in results:
-                    for box in result.boxes:
-                        xyxy = [int(c) for c in box.xyxy[0].tolist()]
-                        color = (0, 255, 0) if int(box.cls[0]) == 0 else (0, 0, 255) 
-                        cv2.rectangle(frame, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
+            # Analyse chaque frame (ou 1 sur 2 pour plus de rapidité)
+            with torch.no_grad():
+                results = model(frame, imgsz=640, conf=0.25, verbose=False)
+                
+            for result in results:
+                for box in result.boxes:
+                    cls_id = int(box.cls[0])
+                    xyxy = [int(c) for c in box.xyxy[0].tolist()]
+                    conf = float(box.conf[0])
+                    
+                    color = CLASS_COLORS.get(cls_id, (255, 255, 255))
+                    label = f"{CLASS_NAMES.get(cls_id, 'Inconnu')} {conf:.2%}"
+                    
+                    # Dessin rectangle
+                    cv2.rectangle(frame, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 3)
+                    
+                    # Dessin label avec fond pour lisibilité
+                    label_size, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+                    top = max(xyxy[1], label_size[1])
+                    cv2.rectangle(frame, (xyxy[0], top - label_size[1] - 10), (xyxy[0] + label_size[0], top), color, cv2.FILLED)
+                    cv2.putText(frame, label, (xyxy[0], top - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
             process.stdin.write(frame.tobytes())
             frame_count += 1
@@ -139,34 +156,10 @@ async def predict_video_ffmpeg(file: UploadFile = File(...)):
         process.wait()
         cap.release()
         
-        return FileResponse(
-            output_path, 
-            media_type="video/mp4", 
-            background=BackgroundTask(remove_file, output_path)
-        )
+        return FileResponse(output_path, media_type="video/mp4", 
+                            background=BackgroundTask(remove_file, output_path))
     except Exception as e:
         logger.error(f"Erreur Vidéo : {e}")
-        if temp_in: remove_file(temp_in)
-        raise HTTPException(status_code=500, detail="Erreur lors du traitement vidéo")
+        raise HTTPException(status_code=500, detail="Erreur traitement vidéo")
     finally:
         if temp_in: remove_file(temp_in)
-
-# --- LIVE FEED ---
-def gen_frames():
-    # Note : Sur Render (Serveur), le cv2.VideoCapture(0) ne fonctionnera pas car 
-    # le serveur n'a pas de webcam. Cette route est utile uniquement en LOCAL.
-    cap = cv2.VideoCapture(0)
-    try:
-        while True:
-            success, frame = cap.read()
-            if not success: break
-            with torch.no_grad():
-                model(frame, imgsz=640, verbose=False)
-            ret, buffer = cv2.imencode('.jpg', frame)
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-    finally:
-        cap.release()
-
-@app.get("/live")
-def live_feed():
-    return StreamingResponse(gen_frames(), media_type="multipart/x-mixed-replace; boundary=frame")
