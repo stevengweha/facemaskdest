@@ -10,3 +10,5 @@ Pillow
 numpy
 jinja2
 ffmpeg-python
+onnx
+onnxruntime
