@@ -1,8 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+ultralytics
 fastapi
 uvicorn[standard]
 python-multipart
 opencv-python-headless
 Pillow
 numpy
-ultralytics
 jinja2
+ffmpeg-python
