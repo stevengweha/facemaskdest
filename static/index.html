@@ -1,294 +1,588 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Safety Monitor | Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI.MILO | Mask Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        --glass: rgba(255, 255, 255, 0.8);
+        --ink: #1e293b;
+        --muted: #64748b;
+    }
 
-    <style>
-        :root {
-            --primary: #6366f1;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            --glass: rgba(255, 255, 255, 0.8);
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg-gradient);
+        background-attachment: fixed;
+        color: var(--ink);
+        min-height: 100vh;
+    }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            color: #1e293b;
-            min-height: 100vh;
-        }
+    nav {
+        padding: 1.2rem 2rem;
+        background: var(--glass);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        position: sticky; top: 0; z-index: 100;
+    }
+    nav h1 { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+    nav h1 span { color: var(--primary); }
+    .status-pill {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.8rem; font-weight: 600; color: var(--muted);
+        background: rgba(16,185,129,0.1); padding: 6px 12px; border-radius: 999px;
+    }
+    .status-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
 
-        nav {
-            padding: 1.5rem 2rem;
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            position: sticky; top: 0; z-index: 100;
-        }
+    main {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1.75rem;
+    }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
 
-        nav h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
-        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .panel-left { display: flex; flex-direction: column; gap: 1.25rem; }
 
-        main {
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 2rem;
-        }
+    .card {
+        background: var(--glass);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 1.4rem;
+        border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+    }
+    .card h3 { font-size: 0.9rem; margin-bottom: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-        @media (max-width: 900px) {
-            main { grid-template-columns: 1fr; }
-        }
+    .tabs { display: flex; gap: 6px; background: rgba(0,0,0,0.04); padding: 4px; border-radius: 12px; margin-bottom: 1rem; }
+    .tab-btn {
+        flex: 1; border: none; background: transparent; padding: 0.6rem 0.4rem;
+        font-weight: 600; font-size: 0.8rem; border-radius: 9px; cursor: pointer;
+        color: var(--muted); transition: all 0.2s;
+    }
+    .tab-btn.active { background: white; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-        .panel-left { display: flex; flex-direction: column; gap: 1.5rem; }
+    .btn {
+        width: 100%; padding: 0.9rem; border-radius: 12px; border: none;
+        font-weight: 600; cursor: pointer; font-size: 0.9rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+    .btn-danger { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.4);
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-        }
+    .dropzone {
+        border: 2px dashed #cbd5e1; border-radius: 14px; padding: 1.6rem 1rem;
+        text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; color: var(--muted);
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: rgba(99,102,241,0.05); color: var(--primary); }
+    .dropzone input { display: none; }
 
-        .stat-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1rem 0; border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .stat-item:last-child { border: none; }
-        .stat-label { font-size: 0.9rem; font-weight: 600; color: #64748b; }
-        .stat-value { font-size: 1.4rem; font-weight: 800; }
+    .stat-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.85rem 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .stat-item:last-child { border: none; }
+    .stat-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    .stat-value { font-size: 1.3rem; font-weight: 800; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 0.8rem; }
-        .btn {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 12px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-        .btn-outline { background: white; border: 1px solid #e2e8f0; }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .slider-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    input[type="range"] { width: 100%; accent-color: var(--primary); }
 
-        .viewport-container {
-            position: relative;
-            background: #0f172a;
-            border-radius: 24px;
-            height: 75vh;
-            overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        }
+    .viewport-container {
+        position: relative;
+        background: #0f172a;
+        border-radius: 24px;
+        min-height: 75vh;
+        overflow: hidden;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    }
 
-        #canvas, #liveFeed {
-            width: 100%; height: 100%; object-fit: contain; display: none;
-        }
+    #canvas, #liveVideo, #liveOverlay, #resultVideo {
+        max-width: 100%; max-height: 75vh; width: 100%; height: 100%; object-fit: contain; display: none;
+    }
+    #liveVideo, #liveOverlay { position: absolute; inset: 0; margin: auto; }
+    #liveOverlay { pointer-events: none; }
 
-        .loader-overlay {
-            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.8);
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            color: white; z-index: 50;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 1rem;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+    .empty-state { color: rgba(255,255,255,0.4); text-align: center; padding: 2rem; }
+    .empty-state svg { margin-bottom: 1rem; opacity: 0.5; }
 
-        #rgpd-modal {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center;
-            z-index: 1000; padding: 20px;
-        }
-        .modal-box {
-            background: white; padding: 2.5rem; border-radius: 30px;
-            max-width: 450px; text-align: center;
-        }
+    .loader-overlay {
+        position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        color: white; z-index: 50;
+    }
+    .spinner {
+        width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: var(--primary); border-radius: 50%;
+        animation: spin 1s linear infinite; margin-bottom: 1rem;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .progress-track { width: 220px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 999px; overflow: hidden; margin-top: 0.8rem; }
+    .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
 
-        input[type="file"] { display: none; }
-    </style>
+    .live-badge {
+        position: absolute; top: 16px; left: 16px; z-index: 60;
+        background: rgba(239,68,68,0.9); color: white; font-size: 0.75rem; font-weight: 700;
+        padding: 5px 10px; border-radius: 999px; display: none; align-items: center; gap: 6px;
+    }
+    .live-badge.show { display: flex; }
+    .live-dot { width: 6px; height: 6px; background: white; border-radius: 50%; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .fps-badge {
+        position: absolute; top: 16px; right: 16px; z-index: 60;
+        background: rgba(15,23,42,0.7); color: white; font-size: 0.72rem; font-weight: 600;
+        padding: 5px 10px; border-radius: 999px; display: none;
+    }
+    .fps-badge.show { display: block; }
+
+    #rgpd-modal {
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center;
+        z-index: 1000; padding: 20px;
+    }
+    .modal-box { background: white; padding: 2.4rem; border-radius: 26px; max-width: 440px; text-align: center; }
+    .modal-box h2 { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    .modal-box p { color: var(--muted); line-height: 1.5; }
+
+    .toast {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px;
+        font-size: 0.85rem; font-weight: 500; z-index: 2000; opacity: 0; transition: all 0.3s;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--danger); }
+</style>
 </head>
 <body>
 
-    <div id="rgpd-modal">
-        <div class="modal-box">
-            <div style="margin-bottom: 2rem;">
-                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">🎯 Objectif du Projet</h2>
-                <p style="color: #475569; line-height: 1.5;">
-                    Cette IA est conçue pour la <strong>sécurité sanitaire</strong>. Elle détecte en temps réel le port du masque et identifie les visages non conformes.
-                </p>
+<div id="rgpd-modal">
+    <div class="modal-box">
+        <h2>🎯 AI.MILO</h2>
+        <p style="margin-bottom: 1.6rem;">Détection en temps réel du port du masque : webcam live, photo ou vidéo.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 1.6rem;">
+        <h3 style="font-size: 1.05rem; margin-bottom: 0.4rem;">🛡️ Confidentialité</h3>
+        <p style="font-size: 0.9rem; margin-bottom: 1.8rem;">Aucune image ni vidéo n'est stockée : tout est traité à la volée puis supprimé.</p>
+        <button class="btn btn-primary" onclick="closeModal()">Compris, lancer AI.MILO 🚀</button>
+    </div>
+</div>
+
+<nav>
+    <h1>AI.<span>MILO</span></h1>
+    <div class="status-pill"><span class="status-dot"></span> Système actif</div>
+</nav>
+
+<main>
+    <div class="panel-left">
+        <div class="card">
+            <h3>Mode</h3>
+            <div class="tabs">
+                <button class="tab-btn active" data-mode="live" onclick="switchMode('live')">🎥 Live</button>
+                <button class="tab-btn" data-mode="image" onclick="switchMode('image')">🖼️ Photo</button>
+                <button class="tab-btn" data-mode="video" onclick="switchMode('video')">🎬 Vidéo</button>
             </div>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 2rem;">
-            <div style="margin-bottom: 2rem;">
-                <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">🛡️ Confidentialité</h3>
-                <p style="color: #64748b; font-size: 0.95rem;">
-                    <strong>Zéro stockage :</strong> Vos images et vidéos sont traitées localement. Aucune donnée n'est conservée.
-                </p>
+
+            <div id="panel-live">
+                <button class="btn btn-primary" id="liveToggleBtn" onclick="toggleWebcam()">🎥 Démarrer la webcam</button>
+                <div style="margin-top: 1rem;">
+                    <div class="slider-row"><span>Confiance</span><span id="confValLive">25%</span></div>
+                    <input type="range" min="10" max="90" value="25" id="confSliderLive" oninput="updateConfLabel('Live')">
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="closeModal()">Compris, Lancer MILO IA😎🏃‍➡️</button>
+
+            <div id="panel-image" style="display:none;">
+                <label class="dropzone" id="dropzoneImage">
+                    <input type="file" accept="image/*" id="imageInput" onchange="handleImageFile(this.files[0])">
+                    📁 Cliquer ou glisser une image ici
+                </label>
+                <div style="margin-top: 1rem;">
+                    <div class="slider-row"><span>Confiance</span><span id="confValImg">25%</span></div>
+                    <input type="range" min="10" max="90" value="25" id="confSliderImg" oninput="updateConfLabel('Img')">
+                </div>
+            </div>
+
+            <div id="panel-video" style="display:none;">
+                <label class="dropzone" id="dropzoneVideo">
+                    <input type="file" accept="video/*" id="videoInput" onchange="handleVideoFile(this.files[0])">
+                    📁 Cliquer ou glisser une vidéo ici
+                </label>
+                <div style="margin-top: 1rem;">
+                    <div class="slider-row"><span>Vitesse / Précision</span><span id="skipVal">Équilibré</span></div>
+                    <input type="range" min="1" max="6" value="2" id="skipSlider" oninput="updateSkipLabel()">
+                </div>
+            </div>
+
+            <button id="cancelBtn" class="btn btn-danger" style="display:none; margin-top: 1rem;" onclick="stopAll()">✕ Arrêter / Réinitialiser</button>
+        </div>
+
+        <div class="card">
+            <h3>Statistiques</h3>
+            <div class="stat-item">
+                <span class="stat-label">🟢 Conforme</span>
+                <span class="stat-value" id="count-mask" style="color: var(--success);">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🔴 Sans masque</span>
+                <span class="stat-value" id="count-no-mask" style="color: var(--danger);">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🟡 Incorrect</span>
+                <span class="stat-value" id="count-incorrect" style="color: var(--warning);">0</span>
+            </div>
         </div>
     </div>
 
-    <nav>
-        <h1>AI.MILO <span style="color: var(--primary);">MASK</span></h1>
-        <div><span class="status-dot"></span> <small> N'abuse pas de moi 😉✌️</small></div>
-    </nav>
+    <div class="viewport-container" id="viewport">
+        <div class="live-badge" id="liveBadge"><span class="live-dot"></span> LIVE</div>
+        <div class="fps-badge" id="fpsBadge">-- ms</div>
 
-    <main>
-        <div class="panel-left">
-            <div class="card">
-                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Contrôles</h3>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="startWebcam()">🎥 Webcam Live</button>
-                    <label class="btn btn-outline">
-                        📁 Importer Image <input type="file" accept="image/*" onchange="processImage(event)">
-                    </label>
-                    <button id="cancelBtn" class="btn btn-outline" style="color: var(--danger); display:none;" onclick="stopAll()">Arrêter le flux</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Statistiques</h3>
-                <div class="stat-item">
-                    <span class="stat-label">Conforme</span>
-                    <span class="stat-value" id="count-mask" style="color: var(--success);">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Sans Masque</span>
-                    <span class="stat-value" id="count-no-mask" style="color: var(--danger);">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Incorrect / Alerte</span>
-                    <span class="stat-value" id="count-incorrect" style="color: var(--warning);">0</span>
-                </div>
+        <div class="loader-overlay" id="loader">
+            <div class="spinner"></div>
+            <p style="font-size: 0.85rem; letter-spacing: 1px;" id="loaderText">TRAITEMENT NEURONAL...</p>
+            <div class="progress-track" id="progressTrack" style="display:none;">
+                <div class="progress-fill" id="progressFill"></div>
             </div>
         </div>
 
-        <div class="viewport-container">
-            <div id="loader" class="loader-overlay">
-                <div class="spinner"></div>
-                <p style="font-size: 0.9rem; letter-spacing: 1px;">TRAITEMENT NEURONAL...</p>
-            </div>
-            <img id="liveFeed" />
-            <canvas id="canvas"></canvas>
+        <div class="empty-state" id="emptyState">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <p>Choisis un mode à gauche pour commencer</p>
         </div>
-    </main>
 
-    <script>
-        const API_URL = window.location.origin;
-        // Correspondance exacte avec le backend : 0=with_mask, 1=without_mask, 2=mask_weared_incorrect
-        const classNames = ["Masque", "Sans Masque", "Incorrect"];
-        const classColors = ["#10b981", "#ef4444", "#f59e0b"];
+        <video id="liveVideo" autoplay muted playsinline></video>
+        <canvas id="liveOverlay"></canvas>
+        <canvas id="canvas"></canvas>
+        <video id="resultVideo" controls></video>
+    </div>
+</main>
 
-        function closeModal() { document.getElementById("rgpd-modal").style.display = "none"; }
+<div class="toast" id="toast"></div>
 
-        function setStats(m, nm, inc) {
-            document.getElementById('count-mask').textContent = m;
-            document.getElementById('count-no-mask').textContent = nm;
-            document.getElementById('count-incorrect').textContent = inc;
+<script>
+const API_URL = window.location.origin;
+const CLASS_NAMES = ["Masque", "Sans Masque", "Incorrect"];
+const CLASS_COLORS = ["#10b981", "#ef4444", "#f59e0b"];
+
+let currentMode = "live";
+let webcamStream = null;
+let liveLoopActive = false;
+let liveTimer = null;
+
+const els = {
+    liveVideo: document.getElementById("liveVideo"),
+    liveOverlay: document.getElementById("liveOverlay"),
+    canvas: document.getElementById("canvas"),
+    resultVideo: document.getElementById("resultVideo"),
+    loader: document.getElementById("loader"),
+    loaderText: document.getElementById("loaderText"),
+    progressTrack: document.getElementById("progressTrack"),
+    progressFill: document.getElementById("progressFill"),
+    emptyState: document.getElementById("emptyState"),
+    cancelBtn: document.getElementById("cancelBtn"),
+    liveBadge: document.getElementById("liveBadge"),
+    fpsBadge: document.getElementById("fpsBadge"),
+    liveToggleBtn: document.getElementById("liveToggleBtn"),
+};
+
+function closeModal() { document.getElementById("rgpd-modal").style.display = "none"; }
+
+function showToast(msg, isError = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast show" + (isError ? " error" : "");
+    setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+function setStats(m, nm, inc) {
+    document.getElementById('count-mask').textContent = m;
+    document.getElementById('count-no-mask').textContent = nm;
+    document.getElementById('count-incorrect').textContent = inc;
+}
+
+function updateConfLabel(which) {
+    document.getElementById('confVal' + which).textContent = document.getElementById('confSlider' + which).value + '%';
+}
+function updateSkipLabel() {
+    const v = parseInt(document.getElementById('skipSlider').value);
+    const labels = {1:"Max précision", 2:"Équilibré", 3:"Rapide", 4:"Rapide", 5:"Très rapide", 6:"Très rapide"};
+    document.getElementById('skipVal').textContent = labels[v] || "Équilibré";
+}
+
+// ---------------- Drag & drop ----------------
+["dropzoneImage", "dropzoneVideo"].forEach(id => {
+    const zone = document.getElementById(id);
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        if (id === "dropzoneImage") handleImageFile(file); else handleVideoFile(file);
+    });
+});
+
+// ---------------- Mode switching ----------------
+function switchMode(mode) {
+    if (mode === currentMode) return;
+    stopAll();
+    currentMode = mode;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+    document.getElementById("panel-live").style.display = mode === "live" ? "block" : "none";
+    document.getElementById("panel-image").style.display = mode === "image" ? "block" : "none";
+    document.getElementById("panel-video").style.display = mode === "video" ? "block" : "none";
+}
+
+function resetView() {
+    [els.liveVideo, els.liveOverlay, els.canvas, els.resultVideo].forEach(el => el.style.display = "none");
+    els.loader.style.display = "none";
+    els.progressTrack.style.display = "none";
+    els.progressFill.style.width = "0%";
+    els.cancelBtn.style.display = "none";
+    els.liveBadge.classList.remove("show");
+    els.fpsBadge.classList.remove("show");
+    els.emptyState.style.display = "flex";
+    setStats(0, 0, 0);
+}
+
+function stopAll() {
+    liveLoopActive = false;
+    if (liveTimer) clearTimeout(liveTimer);
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+    }
+    els.liveVideo.srcObject = null;
+    els.liveToggleBtn.textContent = "🎥 Démarrer la webcam";
+    resetView();
+}
+
+// ---------------- LIVE WEBCAM MODE ----------------
+async function toggleWebcam() {
+    if (webcamStream) { stopAll(); return; }
+
+    resetView();
+    els.emptyState.style.display = "none";
+
+    try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    } catch (e) {
+        showToast("Impossible d'accéder à la webcam", true);
+        els.emptyState.style.display = "flex";
+        return;
+    }
+
+    els.liveVideo.srcObject = webcamStream;
+    els.liveVideo.style.display = "block";
+    els.liveOverlay.style.display = "block";
+    els.liveBadge.classList.add("show");
+    els.fpsBadge.classList.add("show");
+    els.cancelBtn.style.display = "flex";
+    els.liveToggleBtn.textContent = "⏸ Arrêter la webcam";
+
+    els.liveVideo.onloadedmetadata = () => {
+        els.liveOverlay.width = els.liveVideo.videoWidth;
+        els.liveOverlay.height = els.liveVideo.videoHeight;
+        liveLoopActive = true;
+        liveLoop();
+    };
+}
+
+async function liveLoop() {
+    if (!liveLoopActive) return;
+
+    const t0 = performance.now();
+    try {
+        const captureCanvas = document.createElement("canvas");
+        captureCanvas.width = els.liveVideo.videoWidth;
+        captureCanvas.height = els.liveVideo.videoHeight;
+        const cctx = captureCanvas.getContext("2d");
+        cctx.drawImage(els.liveVideo, 0, 0);
+
+        const blob = await new Promise(res => captureCanvas.toBlob(res, "image/jpeg", 0.75));
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
+        const conf = document.getElementById("confSliderLive").value / 100;
+
+        const res = await fetch(`${API_URL}/predict?conf=${conf}`, { method: "POST", body: formData });
+        const data = await res.json();
+
+        drawLiveDetections(data.detections || []);
+        els.fpsBadge.textContent = `${Math.round(performance.now() - t0)} ms`;
+    } catch (e) {
+        // on ignore une frame en erreur, la webcam continue de tourner
+    }
+
+    if (liveLoopActive) liveTimer = setTimeout(liveLoop, 200);
+}
+
+function drawLiveDetections(detections) {
+    const ctx = els.liveOverlay.getContext("2d");
+    ctx.clearRect(0, 0, els.liveOverlay.width, els.liveOverlay.height);
+
+    let counts = [0, 0, 0];
+    detections.forEach(det => {
+        const cls = (det.class === 0 || det.class === 1) ? det.class : 2;
+        counts[cls]++;
+        const [x1, y1, x2, y2] = det.bbox;
+        const color = CLASS_COLORS[cls];
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(els.liveOverlay.width / 300, 3);
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+        const txt = `${CLASS_NAMES[cls]} ${(det.confidence * 100).toFixed(0)}%`;
+        ctx.font = `600 ${Math.max(els.liveOverlay.width / 55, 14)}px 'Plus Jakarta Sans'`;
+        const pad = 6;
+        const th = Math.max(els.liveOverlay.width / 55, 14);
+        ctx.fillStyle = color;
+        ctx.fillRect(x1, y1 - th - pad, ctx.measureText(txt).width + pad * 2, th + pad);
+        ctx.fillStyle = "white";
+        ctx.fillText(txt, x1 + pad, y1 - pad / 2 - 2);
+    });
+    setStats(counts[0], counts[1], counts[2]);
+}
+
+// ---------------- IMAGE MODE ----------------
+async function handleImageFile(file) {
+    if (!file) return;
+    resetView();
+    els.emptyState.style.display = "none";
+    els.canvas.style.display = "block";
+    els.loader.style.display = "flex";
+    els.loaderText.textContent = "ANALYSE DE L'IMAGE...";
+    els.cancelBtn.style.display = "flex";
+
+    const ctx = els.canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = async () => {
+        els.canvas.width = img.naturalWidth;
+        els.canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+
+        const conf = document.getElementById("confSliderImg").value / 100;
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch(`${API_URL}/predict?conf=${conf}`, { method: "POST", body: formData });
+            if (!res.ok) throw new Error("Erreur serveur");
+            const data = await res.json();
+
+            ctx.drawImage(img, 0, 0);
+            let counts = [0, 0, 0];
+
+            if (data.detections && data.detections.length > 0) {
+                data.detections.forEach(det => {
+                    const cls = (det.class === 0 || det.class === 1) ? det.class : 2;
+                    counts[cls]++;
+                    const [x1, y1, x2, y2] = det.bbox;
+                    const color = CLASS_COLORS[cls];
+
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = Math.max(els.canvas.width / 300, 3);
+                    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                    const fontSize = Math.max(els.canvas.width / 50, 14);
+                    ctx.font = `600 ${fontSize}px 'Plus Jakarta Sans'`;
+                    const txt = `${CLASS_NAMES[cls]} ${(det.confidence * 100).toFixed(0)}%`;
+                    const padding = 8;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x1, y1 - fontSize - padding, ctx.measureText(txt).width + padding * 2, fontSize + padding);
+                    ctx.fillStyle = "white";
+                    ctx.fillText(txt, x1 + padding, y1 - padding - 2);
+                });
+                setStats(counts[0], counts[1], counts[2]);
+            } else {
+                setStats(0, 0, 0);
+                showToast("Aucun visage détecté");
+            }
+        } catch (e) {
+            showToast("Erreur pendant l'analyse", true);
+        } finally {
+            els.loader.style.display = "none";
         }
+    };
+    img.src = URL.createObjectURL(file);
+}
 
-        function resetView() {
-            document.querySelectorAll('.viewport-container > *:not(#loader)').forEach(el => el.style.display = 'none');
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('cancelBtn').style.display = 'none';
-            document.getElementById('liveFeed').src = "";
-            setStats(0,0,0);
+// ---------------- VIDEO MODE ----------------
+function handleVideoFile(file) {
+    if (!file) return;
+    resetView();
+    els.emptyState.style.display = "none";
+    els.loader.style.display = "flex";
+    els.loaderText.textContent = "TRAITEMENT DE LA VIDÉO...";
+    els.progressTrack.style.display = "block";
+    els.cancelBtn.style.display = "flex";
+
+    const skip = document.getElementById("skipSlider").value;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/predict_video?conf=0.25&skip_frames=${skip}`, true);
+    xhr.responseType = "blob";
+
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const pct = Math.min(45, (e.loaded / e.total) * 45); // upload = 45% de la barre
+            els.progressFill.style.width = pct + "%";
         }
-
-        function startWebcam() {
-            resetView();
-            const feed = document.getElementById("liveFeed");
-            feed.src = `${API_URL}/live`;
-            feed.style.display = "block";
-            document.getElementById("cancelBtn").style.display = "flex";
+    };
+    // Le traitement serveur n'a pas de progression exacte connue côté client :
+    // on anime doucement la fin de barre pendant l'attente.
+    let fakeProgress = 45;
+    const fakeTimer = setInterval(() => {
+        if (fakeProgress < 90) {
+            fakeProgress += 1;
+            els.progressFill.style.width = fakeProgress + "%";
         }
+    }, 400);
 
-        async function processImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            resetView();
-            const canvas = document.getElementById("canvas");
-            const ctx = canvas.getContext("2d");
-            const loader = document.getElementById("loader");
-            const img = new Image();
-
-            loader.style.display = "flex";
-
-            img.onload = async () => {
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                ctx.drawImage(img, 0, 0);
-                canvas.style.display = "block";
-
-                const formData = new FormData();
-                formData.append("file", file);
-
-                try {
-                    const res = await fetch(`${API_URL}/predict`, { method: "POST", body: formData });
-                    const data = await res.json();
-
-                    ctx.drawImage(img, 0, 0);
-                    let counts = [0, 0, 0];
-
-                    if (data.detections && data.detections.length > 0) {
-                        data.detections.forEach(det => {
-                            // On s'assure que la classe est bien 0, 1 ou 2
-                            const cls = (det.class === 0 || det.class === 1) ? det.class : 2;
-                            counts[cls]++;
-                            
-                            const [x1, y1, x2, y2] = det.bbox;
-                            const color = classColors[cls];
-                            
-                            ctx.strokeStyle = color;
-                            ctx.lineWidth = Math.max(canvas.width / 300, 3);
-                            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-                            ctx.fillStyle = color;
-                            const fontSize = Math.max(canvas.width / 50, 14);
-                            ctx.font = `600 ${fontSize}px 'Plus Jakarta Sans'`;
-                            const txt = `${classNames[cls]} ${(det.confidence*100).toFixed(0)}%`;
-                            const padding = 8;
-                            ctx.fillRect(x1, y1 - fontSize - padding, ctx.measureText(txt).width + padding*2, fontSize + padding);
-
-                            ctx.fillStyle = "white";
-                            ctx.fillText(txt, x1 + padding, y1 - padding - 2);
-                        });
-                        setStats(counts[0], counts[1], counts[2]);
-                    } else {
-                        // Aucun visage détecté par l'IA
-                        setStats(0, 0, "PAS DE VISAGE DÉTECTÉ");
-                        document.getElementById('count-incorrect').style.fontSize = "0.8rem";
-                    }
-                } catch (e) {
-                    console.error(e);
-                } finally {
-                    loader.style.display = "none";
-                }
-            };
-            img.src = URL.createObjectURL(file);
+    xhr.onload = () => {
+        clearInterval(fakeTimer);
+        els.loader.style.display = "none";
+        if (xhr.status !== 200) {
+            showToast("Erreur pendant le traitement vidéo", true);
+            return;
         }
+        els.progressFill.style.width = "100%";
+        const url = URL.createObjectURL(xhr.response);
+        els.resultVideo.src = url;
+        els.resultVideo.style.display = "block";
+        els.resultVideo.play();
+        showToast("Vidéo analysée avec succès");
+    };
+    xhr.onerror = () => {
+        clearInterval(fakeTimer);
+        els.loader.style.display = "none";
+        showToast("Erreur réseau pendant l'envoi", true);
+    };
 
-        function stopAll() { resetView(); }
-    </script>
+    xhr.send(formData);
+}
+</script>
 </body>
 </html>

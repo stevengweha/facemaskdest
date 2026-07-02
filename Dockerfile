@@ -1,25 +1,19 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 
-# Installer ffmpeg léger
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Installer Python libs
-COPY requirements.txt .
-RUN pip install --upgrade pip
+# Installer les dépendances
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier l'application et le modèle
+# Copier le reste de l'application
 COPY . .
 
-# Port Render
-ENV PORT=8080
-EXPOSE 8080
+# Exposer le port utilisé par uvicorn (Hugging Face Spaces préfère 7860/8080)
+EXPOSE 7860
 
-# Lancement FastAPI
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Commande de lancement (modifiez si votre app est différente)
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
